@@ -1,11 +1,11 @@
-#controls {
+.controls {
 	font-family:arial;
 	font-size:24px;
 	font-weight:bold;
 	margin: 15px;
 }
 
-#controls * {
+.controls * {
 	margin: 5px;
 	display:inline-block;
 	
@@ -48,6 +48,13 @@
 #showSwing { 
 	display: inline-block;
 	width: 40px; 
+}
+
+.notedisplay {
+	font-family:arial;
+	text-align: center;
+	vertical-align: middle;
+	font-size: 10em;
 }
 
 * {
