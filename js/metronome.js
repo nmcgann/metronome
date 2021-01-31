@@ -202,6 +202,15 @@ function mute() { //mute event  - zeros out the gain node, or sets to full depen
     }
 }
 
+function updateTempo(){
+	tempo = event.target.value; 
+	document.getElementById('showTempo').value = tempo;
+}
+function updateTempoSlider(){
+	tempo = event.target.value; 
+	document.getElementById('tempo').value = tempo;
+}
+
 function init(){
     var container = document.createElement( 'div' );
 
@@ -230,7 +239,8 @@ function init(){
 	element1.selectedIndex  = 0;
 	element1 = document.getElementById('tempo');	
 	element1.value = tempo;
-	
+	element1 = document.getElementById('showTempo');
+	element1.value = tempo;
 //
 
     // NOTE: THIS RELIES ON THE MONKEYPATCH LIBRARY BEING LOADED FROM
