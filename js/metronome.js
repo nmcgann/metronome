@@ -34,6 +34,7 @@ var bufferLoader = null; 	//audio sample data loader
 var audioBuffers = [];
 var audioIsLoaded = false;
 var audioFilesArr = ["hi_click.wav", "low_click.wav"]; //first beat sound, other beats sound
+var maxSlider = 100;
 
 var parameters = {	//the control values/options
 	"resSelect" : 	0,		// 2 == 16th, 1 == 8th, 0 == quarter note **NM changed 16th and quarter
@@ -138,6 +139,24 @@ function scheduler() {
 }
 
 function play(element) {
+	
+	//pick up ios interrupted/suspended problem when switching tabs
+	if(audioContext.state === 'interrupted' || 
+		audioContext.state === 'suspended') { 
+		//audioContext.resume(); //should work, but doesn't fix problem in ios safari, the audioContext dies
+		//workround is to kill the old audiocontext and make a new one
+		audioContext.close();
+		muteNode = null;
+		masterGainNode = null;
+		audioContext = new AudioContext();
+		muteNode = audioContext.createGain();
+		masterGainNode = audioContext.createGain();
+	}
+	
+	//update mute and vol states
+	muteNode.gain.value = (isMuted) ? 0 : 1;
+	masterGainNode.gain.value = calcVolumeLaw(parameters.mastervol, maxSlider);
+	
     if (!unlocked) {
       // play silent buffer to unlock the audio
       var buffer = audioContext.createBuffer(1, 1, 22050);
@@ -250,14 +269,22 @@ function mute(element) { //mute event  - zeros out the gain node, or sets to ful
 }
 
 function changeVolume(element){
+	var newVol;
+	
 	parameters.mastervol = parseInt(element.value);
 
-	var fraction = parameters.mastervol / parseInt(element.max);
+	newVol = calcVolumeLaw(parameters.mastervol, maxSlider);
+	masterGainNode.gain.value = newVol;
+	//console.log("mvol = " + newVol);
+	updateSavedParameters();	
+}
+
+function calcVolumeLaw(slider, maxSlider){
+	var fraction = slider / maxSlider;
 	// Let's use an x*x curve (x-squared) since simple linear (x) does not
 	// sound as good.
-	masterGainNode.gain.value = fraction * fraction;
-	//console.log("mvol = " + (fraction * fraction));
-	updateSavedParameters();	
+
+	return fraction * fraction;
 }
 
 function updateTempo(element){
@@ -335,8 +362,8 @@ function setParameters(){
 	
 	element1 = document.getElementById('mastervol');
 	element1.value = parameters.mastervol;
-
 	
+	maxSlider = parseInt(element1.max);
 }
 
 function init(){
@@ -371,6 +398,8 @@ function init(){
     // spec-compliant, and work on Chrome, Safari and Firefox.
 
     audioContext = new AudioContext();
+	//test
+	//audioContext.onstatechange = function(){ console.log("AudioContext: " + audioContext.state);}
 
     // if we wanted to load audio files, etc., this is where we should do it.
 
@@ -383,11 +412,10 @@ function init(){
 	bufferLoader.load(); //load all the audio files
 
 //NM added mute(vol) control
-	// Create a gain node.
+	// Create a gain node for mute
 	muteNode = audioContext.createGain();
-	muteNode.gain.value = 1; //default to unmuted
+	// Create a gain node for master volume
 	masterGainNode = audioContext.createGain();
-	masterGainNode.gain.value = 1; //default to full
 
     window.onorientationchange = resetCanvas;
     window.onresize = resetCanvas;
@@ -395,19 +423,9 @@ function init(){
     requestAnimFrame(draw);    // start the drawing loop.
 
     timerWorker = new Worker("js/metronomeworker.js");
-//NM test code	
-	var tickCount = 0;
-//TC
 
     timerWorker.onmessage = function(e) {
         if (e.data == "tick") {
-//NM test code				
-			tickCount++;
-			if (tickCount > 40){ //1 per sec
-				tickCount = 0;
-				console.log("tick!");
-			}
-//TC			
             // console.log("tick!");
             scheduler();
         }
